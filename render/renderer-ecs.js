@@ -461,6 +461,8 @@ async function chooseAndInitRenderer(em, shaders, canvas) {
     if (!FORCE_WEBGL) {
         // try webgpu first
         const adapter = await navigator.gpu?.requestAdapter();
+        if (!adapter)
+            console.error("navigator.gpu?.requestAdapter() failed");
         if (adapter) {
             const supportsTimestamp = adapter.features.has("timestamp-query");
             if (!supportsTimestamp && VERBOSE_LOG)

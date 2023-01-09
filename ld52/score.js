@@ -13,13 +13,14 @@ export const ScoreDef = EM.defineComponent("score", () => ({
     gameEndedAt: 0,
     levelEnding: false,
     levelEndedAt: 0,
+    victory: false,
     // TODO: this is very hacky
     onLevelEnd: [],
     onGameEnd: [],
 }));
 EM.registerSystem([], [ScoreDef, TextDef], (_, res) => {
     if (!res.score.gameEnding && !res.score.levelEnding) {
-        res.text.upperText = `health: ${res.score.shipHealth} harvested: ${((res.score.cutPurple / res.score.totalPurple) *
+        res.text.upperText = `health: ${(res.score.shipHealth / 100).toFixed(0)}\nharvested: ${((res.score.cutPurple / res.score.totalPurple) *
             100).toFixed(2)}%`;
     }
 }, "updateScoreDisplay");
@@ -27,6 +28,10 @@ EM.registerSystem([], [ScoreDef, TextDef, TimeDef], (_, res) => {
     if (res.score.gameEnding) {
         if (res.time.step > res.score.gameEndedAt + 300) {
             res.score.gameEnding = false;
+            if (res.score.victory) {
+                res.score.levelNumber = 0;
+                res.score.victory = false;
+            }
             setMap(EM, MapPaths[res.score.levelNumber]);
             res.score.shipHealth = 10000;
             for (let f of res.score.onLevelEnd) {
@@ -56,9 +61,12 @@ EM.registerSystem([], [ScoreDef, TextDef, TimeDef], (_, res) => {
         res.text.upperText = "LEVEL FAILED";
     }
     else if (res.score.cutPurple / res.score.totalPurple > 0.95) {
+        console.log("res.score.levelNumber: " + res.score.levelNumber);
+        console.log("MapPaths.length: " + MapPaths.length);
         if (res.score.levelNumber + 1 >= MapPaths.length) {
             res.score.gameEnding = true;
             res.score.gameEndedAt = res.time.step;
+            res.score.victory = true;
             res.text.upperText = "YOU WIN";
         }
         else {

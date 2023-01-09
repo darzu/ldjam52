@@ -7,7 +7,6 @@ import { RenderableConstructDef, RenderableDef, } from "../render/renderer-ecs.j
 import { RendererDef } from "../render/renderer-ecs.js";
 import { ColorDef } from "../color-ecs.js";
 import { AssetsDef } from "../game/assets.js";
-import { ColliderDef } from "../physics/collider.js";
 import { createRef } from "../em_helpers.js";
 import { WorldFrameDef } from "../physics/nonintersection.js";
 import { WindDef } from "./wind.js";
@@ -147,11 +146,6 @@ export async function createMast(em) {
     let ent = em.new();
     em.set(ent, MastDef);
     em.set(ent, RenderableConstructDef, res.assets.mast.proto);
-    em.set(ent, ColliderDef, {
-        shape: "AABB",
-        solid: false,
-        aabb: res.assets.mast.aabb,
-    });
     em.set(ent, PositionDef);
     em.set(ent, RotationDef);
     em.set(ent, ColorDef, V(0.8, 0.7, 0.3));
@@ -223,4 +217,4 @@ EM.registerSystem([MastDef, RotationDef], [], (es) => {
 }, "mastForce");
 EM.addConstraint(["mastForce", "after", "applyWindToSail"]);
 EM.addConstraint(["mastForce", "after", "billow"]);
-//# sourceMappingURL=sail.js.map
+//# sourceMappingURL=sail%20copy.js.map

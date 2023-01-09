@@ -33,6 +33,8 @@ import { GrassMapDef, setMap } from "./grass-map.js";
 import { InputsDef } from "../inputs.js";
 import { ScoreDef } from "./score.js";
 import { raiseManTurret } from "../game/turret.js";
+import { TextDef } from "../game/ui.js";
+import { VERBOSE_LOG } from "../flags.js";
 /*
 TODO:
 [ ] PERF. Disable backface culling ONLY on grass
@@ -42,9 +44,10 @@ NOTES:
 */
 const DBG_PLAYER = true;
 const WORLD_SIZE = 1024;
-const RED_DAMAGE_CUTTING = 5;
-const RED_DAMAGE_NOT_CUTTING = 1;
+const RED_DAMAGE_CUTTING = 10;
+const RED_DAMAGE_PER_FRAME = 40;
 const GREEN_HEALING = 1;
+const SHIP_START_POS = V(0, 2, -WORLD_SIZE * 0.5 * 0.6);
 // const WORLD_HEIGHT = 1024;
 export async function initLD52(em, hosting) {
     const res = await em.whenResources(AssetsDef, 
@@ -74,7 +77,7 @@ export async function initLD52(em, hosting) {
     const score = em.addResource(ScoreDef);
     em.requireSystem("updateScoreDisplay");
     em.requireSystem("detectGameEnd");
-    // map
+    // start map
     setMap(em, "map1");
     // ground
     const ground = em.new();
@@ -155,6 +158,9 @@ export async function initLD52(em, hosting) {
     em.requireSystem("changeWind");
     em.requireSystem("smoothWind");
     const ship = await createShip(em);
+    // move down
+    // ship.position[2] = -WORLD_SIZE * 0.5 * 0.6;
+    vec3.copy(ship.position, SHIP_START_POS);
     em.requireSystem("sailShip");
     em.requireSystem("shipParty");
     // player
@@ -180,10 +186,18 @@ export async function initLD52(em, hosting) {
     const bytesPerVal = texTypeToBytes[GrassCutTexPtr.format];
     // grass cutting
     // cutGrassAt(100, 100, 100, 100);
+    let f32BySize = new Map();
     function getArrayForBox(w, h) {
         let size = w * h * bytesPerVal;
         // TODO(@darzu): PERF. Cache these!
-        const data = new Float32Array(size);
+        let data = f32BySize.get(size);
+        if (!data) {
+            data = new Float32Array(size);
+            f32BySize.set(size, data);
+            if (VERBOSE_LOG)
+                console.log(`tmp f32s using: ${(sum([...f32BySize.values()].map((v) => v.length * Float32Array.BYTES_PER_ELEMENT)) / 1024).toFixed(0)} kb`);
+        }
+        data.fill(0);
         return data;
     }
     // debug stuff
@@ -206,7 +220,8 @@ export async function initLD52(em, hosting) {
     score.onLevelEnd.push(() => {
         worldCutData.fill(0.0);
         grassCutTex.queueUpdate(worldCutData);
-        vec3.set(0, 0, 0, ship.position);
+        // vec3.set(0, 0, 0, ship.position);
+        vec3.copy(ship.position, SHIP_START_POS);
         quat.identity(ship.rotation);
         vec3.set(0, 0, 0, ship.linearVelocity);
         const sail = ship.ld52ship.mast().mast.sail().sail;
@@ -239,6 +254,7 @@ export async function initLD52(em, hosting) {
         const shipH = selfAABB.max[2] - selfAABB.min[2];
         let healthChanges = 0;
         let cutPurple = 0;
+        let redHurt = false;
         // update world texture data
         for (let xi = winXi; xi < winXi + winWi; xi++) {
             for (let yi = winYi; yi < winYi + winHi; yi++) {
@@ -256,11 +272,14 @@ export async function initLD52(em, hosting) {
                             // we are cutting this grass for the first time
                             if (color < 0.1) {
                                 // green
+                                // console.log("GREEN_HEALING");
                                 healthChanges += GREEN_HEALING;
                             }
                             else if (color < 0.6) {
                                 // red
+                                // console.log("RED_DAMAGE_CUTTING");
                                 healthChanges -= RED_DAMAGE_CUTTING;
+                                redHurt = true;
                             }
                             else {
                                 // purple
@@ -272,12 +291,17 @@ export async function initLD52(em, hosting) {
                     else {
                         if (0.1 < color && color < 0.6) {
                             // red
-                            healthChanges -= RED_DAMAGE_NOT_CUTTING;
+                            // console.log("RED_DAMAGE_NOT_CUTTING");
+                            redHurt = true;
                         }
                     }
                 }
             }
         }
+        if (redHurt) {
+            healthChanges -= RED_DAMAGE_PER_FRAME;
+        }
+        // console.log(healthChanges);
         res.score.shipHealth = Math.min(res.score.shipHealth + healthChanges, 10000);
         res.score.cutPurple += cutPurple;
         // copy from world texture data to update window
@@ -329,6 +353,9 @@ export async function initLD52(em, hosting) {
             quatFromUpForward(mast.rotation, V(0, 1, 0), optimalSailLocalDir);
     }, "turnMast");
     EM.requireSystem("turnMast");
+    const { text } = await EM.whenResources(TextDef);
+    text.lowerText =
+        "W/S: unfurl/furl, A/D: turn, SPACE: harvest on/off, E: use/unuse rudder";
 }
 async function createPlayer() {
     const { assets, me } = await EM.whenResources(AssetsDef, MeDef);

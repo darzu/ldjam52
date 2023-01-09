@@ -9,16 +9,20 @@ const EPSILON = 0.001;
 const ORIGIN = V(0, 0, 0);
 const AHEAD_DIR = V(0, 0, 1);
 const WIND_ANGLES = range(8).map((i) => {
-    return (Math.PI * i) / 4;
+    return (Math.PI * i) / 4 - 0.2;
 });
 // For now, the wind is just a single vector. It could instead be a vector
 // field.
-export const WindDef = EM.defineComponent("wind", () => ({
-    angle: 0,
-    dir: V(0, 0, 1),
-    targetAngle: 0,
-    oldAngle: 0,
-}));
+export const WindDef = EM.defineComponent("wind", () => {
+    const wind = {
+        angle: WIND_ANGLES[0],
+        dir: V(0, 0, 1),
+        targetAngle: WIND_ANGLES[0],
+        oldAngle: WIND_ANGLES[0],
+    };
+    vec3.rotateY(AHEAD_DIR, ORIGIN, wind.angle, wind.dir);
+    return wind;
+});
 function setWindAngle(wind, angle) {
     wind.angle = angle;
     vec3.rotateY(AHEAD_DIR, ORIGIN, angle, wind.dir);

@@ -67,19 +67,29 @@ fn vert_main(input: VertexInput) -> VertexOutput {
     // output.color = color + grassUni.tint;
     //output.color = grassUni.tint;
     // TODO: this is bad
-    let randColor = vec3<f32>(rand() - 0.5, rand() - 0.5, rand() - 0.5) * 0.1;
+    rand_seed = worldPos.xz;
+    let rr = rand();
+    let rg = rand();
+    let rb = rand();
+    let randV3 = vec3<f32>(rr - 0.5, rg - 0.5, rb - 0.5);
     var color: vec3<f32>;
     if (colorKey < 0.1) {
-      color = vec3<f32>(0.1, 0.5, 0.1) + randColor;
+      color = vec3<f32>(0.1, 0.5, 0.1) + randV3 * 0.1;
     } else if (colorKey < 0.6) {
-      color = vec3<f32>(0.5, 0.1, 0.1) + randColor;
+      color = vec3<f32>(0.5, 0.1, 0.1) + randV3 * 0.1;
     } else {
-      color = vec3<f32>(0.2, 0.1, 0.2) + randColor;
+      color = vec3<f32>(0.2, 0.1, 0.2) + randV3 * 0.1;
     }
     // color *= spawnF;
     color *= 2.0;
     if (cut > 0.1) {
       color *= 0.2;
+    }
+    let secRand = rand();
+    if (secRand < 0.05) {
+      color = scene.secColor; //  + vec3<f32>(0.5);
+    } else if (secRand < 0.07) {
+      color = scene.terColor;
     }
     output.color = color;
     output.surface = input.surfaceId;

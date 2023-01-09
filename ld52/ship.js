@@ -8,12 +8,13 @@ import { PhysicsParentDef, PositionDef, RotationDef, } from "../physics/transfor
 import { RenderableConstructDef } from "../render/renderer-ecs.js";
 import { V } from "../sprig-matrix.js";
 import { createMast, MastDef } from "./sail.js";
-import { ColliderDef } from "../physics/collider.js";
+import { ColliderDef, } from "../physics/collider.js";
 import { constructNetTurret, TurretDef } from "../game/turret.js";
 import { AuthorityDef, MeDef } from "../net/components.js";
 import { YawPitchDef } from "../yawpitch.js";
 import { PartyDef } from "../game/party.js";
 import { WorldFrameDef } from "../physics/nonintersection.js";
+import { createSock } from "./windsock.js";
 export const ShipDef = EM.defineComponent("ld52ship", () => ({
     mast: createRef(0, [MastDef, RotationDef]),
     rudder: createRef(0, [
@@ -59,6 +60,10 @@ export async function createShip(em) {
     em.set(ent, ColorDef, V(0.5, 0.3, 0.1));
     const mast = await createMast(em);
     em.set(mast, PhysicsParentDef, ent.id);
+    const sock = createSock(em, 2.0);
+    em.set(sock, PhysicsParentDef, ent.id);
+    sock.position[1] =
+        mast.position[1] + mast.collider.aabb.max[1];
     ent.ld52ship.mast = createRef(mast);
     const rudder = await createRudder(em);
     em.set(rudder, PhysicsParentDef, ent.id);
@@ -85,7 +90,7 @@ EM.registerSystem([ShipDef, WorldFrameDef, RotationDef, LinearVelocityDef], [], 
         // );
         const accel = vec3.add(sailAccel, dragForce);
         vec3.add(e.linearVelocity, accel, e.linearVelocity);
-        // vec3.scale(e.linearVelocity, VELOCITY_DRAG, e.linearVelocity);
+        // vec3.scale(e.linearVelocity, VELOCITY_DECAY, e.linearVelocity);
         //console.log(`ship speed is ${vec3.length(e.linearVelocity)}`);
         if (vec3.length(e.linearVelocity) > MAX_SPEED) {
             vec3.normalize(e.linearVelocity, e.linearVelocity);

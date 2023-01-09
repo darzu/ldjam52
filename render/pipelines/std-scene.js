@@ -1,6 +1,7 @@
 import { vec3, mat4 } from "../../sprig-matrix.js";
 import { assertDbg } from "../../util.js";
 import { computeTriangleNormal } from "../../utils-3d.js";
+import { randColor } from "../../utils-game.js";
 import { CY } from "../gpu-registry.js";
 import { createCyStruct } from "../gpu-struct.js";
 import { MAX_INDICES } from "../mesh-pool.js";
@@ -156,6 +157,8 @@ export const SceneStruct = createCyStruct({
     partyPos: "vec3<f32>",
     partyDir: "vec3<f32>",
     windDir: "vec3<f32>",
+    secColor: "vec3<f32>",
+    terColor: "vec3<f32>",
     // TODO(@darzu): timeDelta vs totalTime
     time: "f32",
     canvasAspectRatio: "f32",
@@ -174,11 +177,13 @@ export const SceneStruct = createCyStruct({
         views.f32.set(data.partyPos, offsets_32[2]);
         views.f32.set(data.partyDir, offsets_32[3]);
         views.f32.set(data.windDir, offsets_32[4]);
-        views.f32[offsets_32[5]] = data.time;
-        views.f32[offsets_32[6]] = data.canvasAspectRatio;
-        views.u32[offsets_32[7]] = data.maxSurfaceId;
-        views.u32[offsets_32[8]] = data.numPointLights;
-        views.u32[offsets_32[9]] = data.numGerstnerWaves;
+        views.f32.set(data.secColor, offsets_32[5]);
+        views.f32.set(data.terColor, offsets_32[6]);
+        views.f32[offsets_32[7]] = data.time;
+        views.f32[offsets_32[8]] = data.canvasAspectRatio;
+        views.u32[offsets_32[9]] = data.maxSurfaceId;
+        views.u32[offsets_32[10]] = data.numPointLights;
+        views.u32[offsets_32[11]] = data.numGerstnerWaves;
     },
 });
 export const sceneBufPtr = CY.createSingleton("scene", {
@@ -207,6 +212,8 @@ export function setupScene() {
         partyPos: vec3.create(),
         partyDir: vec3.create(),
         windDir: vec3.create(),
+        secColor: randColor(),
+        terColor: randColor(),
         time: 0,
         canvasAspectRatio: 1,
         maxSurfaceId: 1,
