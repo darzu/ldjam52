@@ -17,7 +17,7 @@ import { grassPoolPtr, } from "../ld52/xp-grass.js";
 // to test for features on hardware we want to support
 const MAX_PIPELINES = 64;
 export function createRenderer(canvas, device, context, shaders) {
-    const timestampQuerySet = device.features.has("timestamp-query")
+    const timestampQuerySet = false && device.features.has("timestamp-query")
         ? device.createQuerySet({
             type: "timestamp",
             count: MAX_PIPELINES + 1, // start of execution + after each pipeline
